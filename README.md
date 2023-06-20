@@ -78,22 +78,19 @@ etc..
 
 - What is Diffusion Model?
   Diffusion models are types of Generative models that use probabilistic processes to transform data from a simple distribution to a more complex target distribution. It iteratively refines the initial random distribution, where in each step it removes the noise from the data and eventually ends up creating a realistic sample of data. This process of denoising data in each step is what is known as “Diffusion”.
+
   - COLAB
     [Google Colaboratory](https://colab.research.google.com/github/huggingface/notebooks/blob/main/diffusers/diffusers_intro.ipynb#scrollTo=xkyOEnzuVbsq)
+
 - The reason why I chose the Diffusion model
 
-|                                                                                                              | GAN                                                                 | Diffusion Model |
-| ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- | --------------- |
-| Pros                                                                                                         | - synthesize high-quality data which includes both images and audio |
-| - faster to train and can use a variety of loss functions such as Wasserstein loss, and Hinge loss functions | - generate high-quality sharp data                                  |
+1. Pros
+   ⇒ synthesize high-quality data which includes both images and audio
+   ⇒ faster to train and can use a variety of loss functions such as Wasserstein loss, and Hinge loss functions
 
-- trained using maximum likelihood estimation, which is a well-understood optimization problem
-- generate both images and audio |
-  | Cons | - both Generator and Discriminator may get stuck in a local minimum
-- sensitive to the choice of hyperparameters
-- mode collapse | - Training a diffusion model can be a slow and computationally expensive process
-- require a large amount of data
-  for effective training |
+2. Cons
+   ⇒ Training a diffusion model can be a slow and computationally expensive process
+   ⇒ require a large amount of data for effective training
 
 Diffusion model을 taining 하는데 시간이 너무 많이 든다는 단점을 없애고 성능을 높이기 위해 Pretrained된 Stable Diffusion Model을 사용하였습니다. 또한 diffusion model을 사용하기 쉽게 만들어 둔 huggingface의 diffusion코드를 import하여 필요한 부분만 수정하였습니다.
 
