@@ -23,10 +23,10 @@ from diffusers.utils.import_utils import is_xformers_available
 from tqdm.auto import tqdm
 from transformers import CLIPTextModel, CLIPTokenizer
 
-from tuneavideo.models.unet import UNet3DConditionModel
-from tuneavideo.data.dataset import TuneAVideoDataset
-from tuneavideo.pipelines.pipeline_tuneavideo import TuneAVideoPipeline
-from tuneavideo.util import save_videos_grid, ddim_inversion
+from bevideo.models.unet import UNet3DConditionModel
+from bevideo.data.dataset import TuneAVideoDataset
+from bevideo.pipelines.pipeline_tuneavideo import TuneAVideoPipeline
+from bevideo.util import save_videos_grid, ddim_inversion
 from einops import rearrange
 
 
@@ -380,6 +380,6 @@ def main(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=str, default="./configs/tuneavideo.yaml")
+    parser.add_argument("--config", type=str, default="./configs/bevideo.yaml")
     args = parser.parse_args()
     main(**OmegaConf.load(args.config))
