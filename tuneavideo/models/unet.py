@@ -411,17 +411,20 @@ class UNet3DConditionModel(ModelMixin, ConfigMixin):
             return (sample,)
 
         return UNet3DConditionOutput(sample=sample)
-
+    #* down_block (1*3, 1) 4번, UNetMidBlock3DCrossAttn한 번 up_block (1, 1*3) 4번 진행해서 finetuning한다. 
     @classmethod
     def from_pretrained_2d(cls, pretrained_model_path, subfolder=None):
+        logger.info("\nHERE 0\n")
         if subfolder is not None:
             pretrained_model_path = os.path.join(pretrained_model_path, subfolder)
-
+        logger.info("\nHERE 1\n")
         config_file = os.path.join(pretrained_model_path, 'config.json')
+        logger.info("\nHERE 2\n")
         if not os.path.isfile(config_file):
             raise RuntimeError(f"{config_file} does not exist")
         with open(config_file, "r") as f:
             config = json.load(f)
+        logger.info("\nHERE 3\n")
         config["_class_name"] = cls.__name__
         config["down_block_types"] = [
             "CrossAttnDownBlock3D",
@@ -435,16 +438,36 @@ class UNet3DConditionModel(ModelMixin, ConfigMixin):
             "CrossAttnUpBlock3D",
             "CrossAttnUpBlock3D"
         ]
-
+        logger.info("\nHERE 4\n")
         from diffusers.utils import WEIGHTS_NAME
         model = cls.from_config(config)
         model_file = os.path.join(pretrained_model_path, WEIGHTS_NAME)
+        logger.info("\nHERE 5\n")
+        logger.info(pretrained_model_path)
+        logger.info(model_file)
+
         if not os.path.isfile(model_file):
+            logger.info("\nHERE NONE\n")
             raise RuntimeError(f"{model_file} does not exist")
-        state_dict = torch.load(model_file, map_location="cpu")
+
+        logger.info("\nHERE 12\n")
+
+
+        try:
+          # device = torch.device('cpu')
+          state_dict = torch.load(model_file, map_location="cuda")
+          # state_dict = torch.load(model_file, map_location=device)
+
+        except Exception as e:
+          logger.info(e)
+
+        logger.info("\nHERE 8\n")
         for k, v in model.state_dict().items():
+            logger.info("\nHERE 9\n")
             if '_temp.' in k:
                 state_dict.update({k: v})
+        logger.info("\nHERE 7\n")                
         model.load_state_dict(state_dict)
+        logger.info("\nHERE 10\n")
 
         return model

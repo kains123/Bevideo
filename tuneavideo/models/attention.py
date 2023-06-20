@@ -153,7 +153,7 @@ class BasicTransformerBlock(nn.Module):
         super().__init__()
         self.only_cross_attention = only_cross_attention
         self.use_ada_layer_norm = num_embeds_ada_norm is not None
-
+        #*원래는 Self-Attn인데 논문에서와 같이 Spatio-temporal attention 사용한다. parallel한 이미지 생성
         # SC-Attn
         self.attn1 = SparseCausalAttention(
             query_dim=dim,
@@ -234,7 +234,6 @@ class BasicTransformerBlock(nn.Module):
         norm_hidden_states = (
             self.norm1(hidden_states, timestep) if self.use_ada_layer_norm else self.norm1(hidden_states)
         )
-
         if self.only_cross_attention:
             hidden_states = (
                 self.attn1(norm_hidden_states, encoder_hidden_states, attention_mask=attention_mask) + hidden_states
@@ -243,7 +242,7 @@ class BasicTransformerBlock(nn.Module):
             hidden_states = self.attn1(norm_hidden_states, attention_mask=attention_mask, video_length=video_length) + hidden_states
 
         if self.attn2 is not None:
-            # Cross-Attention
+            #* Cross-Attention
             norm_hidden_states = (
                 self.norm2(hidden_states, timestep) if self.use_ada_layer_norm else self.norm2(hidden_states)
             )
@@ -254,7 +253,7 @@ class BasicTransformerBlock(nn.Module):
                 + hidden_states
             )
 
-        # Feed-forward
+        #* Feed-forward
         hidden_states = self.ff(self.norm3(hidden_states)) + hidden_states
 
         # Temporal-Attention
@@ -269,6 +268,7 @@ class BasicTransformerBlock(nn.Module):
         return hidden_states
 
 
+#* Edited sparseCausalAttention code 
 class SparseCausalAttention(CrossAttention):
     def forward(self, hidden_states, encoder_hidden_states=None, attention_mask=None, video_length=None):
         batch_size, sequence_length, _ = hidden_states.shape

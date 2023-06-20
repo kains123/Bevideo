@@ -66,6 +66,7 @@ def main(
     use_8bit_adam: bool = False,
     enable_xformers_memory_efficient_attention: bool = True,
     seed: Optional[int] = None,
+    is_static:  bool = False, #* added code
 ):
     *_, config = inspect.getargvalues(inspect.currentframe())
 
@@ -79,6 +80,7 @@ def main(
         format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
         datefmt="%m/%d/%Y %H:%M:%S",
         level=logging.INFO,
+        filename="train.log"
     )
     logger.info(accelerator.state, main_process_only=False)
     if accelerator.is_local_main_process:
@@ -106,6 +108,7 @@ def main(
     tokenizer = CLIPTokenizer.from_pretrained(pretrained_model_path, subfolder="tokenizer")
     text_encoder = CLIPTextModel.from_pretrained(pretrained_model_path, subfolder="text_encoder")
     vae = AutoencoderKL.from_pretrained(pretrained_model_path, subfolder="vae")
+    #* unet이 변경 point이고 그 이외는 동일하다.
     unet = UNet3DConditionModel.from_pretrained_2d(pretrained_model_path, subfolder="unet")
 
     # Freeze vae and text_encoder
@@ -171,6 +174,7 @@ def main(
         vae=vae, text_encoder=text_encoder, tokenizer=tokenizer, unet=unet,
         scheduler=DDIMScheduler.from_pretrained(pretrained_model_path, subfolder="scheduler")
     )
+
     validation_pipeline.enable_vae_slicing()
     ddim_inv_scheduler = DDIMScheduler.from_pretrained(pretrained_model_path, subfolder='scheduler')
     ddim_inv_scheduler.set_timesteps(validation_data.num_inv_steps)
@@ -187,7 +191,6 @@ def main(
     unet, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
         unet, optimizer, train_dataloader, lr_scheduler
     )
-
     # For mixed precision training we cast the text_encoder and vae weights to half-precision
     # as these models are only used for inference, keeping weights in full precision is not required.
     weight_dtype = torch.float32
@@ -222,6 +225,7 @@ def main(
     logger.info(f"  Total optimization steps = {max_train_steps}")
     global_step = 0
     first_epoch = 0
+    logger.info(f"fin")
 
     # Potentially load in the weights and states from a previous save
     if resume_from_checkpoint:
@@ -256,15 +260,29 @@ def main(
 
             with accelerator.accumulate(unet):
                 # Convert videos to latent space
+                #* compute the previous noisy sample x_t -> x_t-1
                 pixel_values = batch["pixel_values"].to(weight_dtype)
-                video_length = pixel_values.shape[1]
+                #* print pixel value
+                #* length = 1로 만든다.
+                if is_static: 
+                    video_length = 2;
+                else : 
+                    video_length = pixel_values.shape[1]
+                logger.info(f"***** {video_length} *****")
                 pixel_values = rearrange(pixel_values, "b f c h w -> (b f) c h w")
+                #* 차원 축소 b*f, c, h, w
                 latents = vae.encode(pixel_values).latent_dist.sample()
-                latents = rearrange(latents, "(b f) c h w -> b c f h w", f=video_length)
-                latents = latents * 0.18215
+
+                latents = rearrange(latents, "(b f) c h w -> b c f h w", f=video_length) 
+                
+                latents = latents * 0.18215 
 
                 # Sample noise that we'll add to the latents
-                noise = torch.randn_like(latents)
+                #* 만약 정적 비디오가 들어온다면 매우 강하게 noise를 준다.
+                if is_static:
+                    noise = torch.randn_like(latents, 0.7, 1)
+                else :
+                    noise = torch.randn_like(latents)
                 bsz = latents.shape[0]
                 # Sample a random timestep for each video
                 timesteps = torch.randint(0, noise_scheduler.num_train_timesteps, (bsz,), device=latents.device)
@@ -345,6 +363,7 @@ def main(
                 break
 
     # Create the pipeline using the trained modules and save it.
+
     accelerator.wait_for_everyone()
     if accelerator.is_main_process:
         unet = accelerator.unwrap_model(unet)
@@ -363,5 +382,4 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default="./configs/tuneavideo.yaml")
     args = parser.parse_args()
-
     main(**OmegaConf.load(args.config))
