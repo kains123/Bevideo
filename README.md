@@ -40,7 +40,7 @@ Stable Diffusion v1-4 Model 사용
 
 1. 사진을 입력했을 때: 사진을 넣었을 때 원하는 길이의 동영상으로 변환 한 뒤, 이 동영상을 Text에 맞게 수정합니다.
 2. 동영상을 입력했을 때: 원하는 Text에 맞게 동영상을 수정합니다.
-3. 이 때 DDIM_Backward, DDIM_forward코드를 추가해 더 나은 결과를 도출합니다.
+3. 이 때 DDIM_Backward, DDPM_forward코드를 추가해 더 나은 결과를 도출합니다.
 
 기존의 Tune-A-Video 코드를 개선하는 방식으로 프로젝트를 진행하였습니다.
 
